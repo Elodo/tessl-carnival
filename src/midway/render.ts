@@ -1633,11 +1633,27 @@ const ARCH_HEIGHT = 58;
 const ARCH_LEFT = -0.45;
 const ARCH_RIGHT = 2.2;
 
+/** The plane-local width of the sign across the top of the arch. */
+const ARCH_SIGN_WIDTH = 124;
+
 export function archBounds(map: MidwayMap): Box {
   const y = map.height - 1;
   const left = toScreen(map.avenueX + ARCH_LEFT - 0.6, y + 0.3);
   const right = toScreen(map.avenueX + ARCH_RIGHT + 0.8, y - 0.3);
-  return { left: left.x, right: right.x, top: right.y - ARCH_HEIGHT - 26, bottom: left.y };
+  // The sign is wider than the posts, and slants up to the left on its plane.
+  const [cx, cy] = archCentre(map);
+  const half = ARCH_SIGN_WIDTH / 2 + 4;
+  return {
+    left: Math.min(left.x, cx - half * 0.894),
+    right: Math.max(right.x, cx + half * 0.894),
+    top: Math.min(right.y - ARCH_HEIGHT - 26, cy - half * 0.447 - 26),
+    bottom: left.y,
+  };
+}
+
+function archCentre(map: MidwayMap): Pt {
+  const y = map.height - 0.75;
+  return at((map.avenueX + ARCH_LEFT + map.avenueX + ARCH_RIGHT + 0.26) / 2, y, ARCH_HEIGHT + 2);
 }
 
 export function drawArch(ctx: Ctx, map: MidwayMap, t: number) {
@@ -1657,7 +1673,7 @@ export function drawArch(ctx: Ctx, map: MidwayMap, t: number) {
       palette.wood,
       palette.woodDark,
     );
-  const centre = at((left + right + 0.26) / 2, y, ARCH_HEIGHT + 2);
+  const centre = archCentre(map);
   onPlane(ctx, centre, () => {
     ctx.fillStyle = palette.gold;
     ctx.beginPath();
@@ -1667,15 +1683,16 @@ export function drawArch(ctx: Ctx, map: MidwayMap, t: number) {
     ctx.beginPath();
     ctx.ellipse(0, -10, 12, 9, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    signBoard(ctx, 'TESSL CARNIVAL', 92, 20, {
+    signBoard(ctx, "ELODO'S TESSL CARNIVAL", ARCH_SIGN_WIDTH, 20, {
       board: palette.wood,
       edge: palette.woodDark,
       text: palette.gold,
     });
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 18; i++) {
       ctx.fillStyle = Math.sin(t * 5 - i * 0.8) > 0 ? palette.cream : palette.goldShade;
       ctx.beginPath();
-      ctx.arc(-44 + i * (88 / 13), 13.5, 1.3, 0, Math.PI * 2);
+      const span = ARCH_SIGN_WIDTH - 4;
+      ctx.arc(-span / 2 + i * (span / 17), 13.5, 1.3, 0, Math.PI * 2);
       ctx.fill();
     }
   });
